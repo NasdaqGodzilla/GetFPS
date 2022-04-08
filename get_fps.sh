@@ -102,6 +102,36 @@ do
     esac
 done
 
+function profile_data_merge() {
+    # log_print "profile_data_merge before: ""$gfxinfo_raw"
+
+    # The first occurrence
+    first_occur=`echo -e "$gfxinfo_raw" | grep "$data_start" -n | head -n1 | awk -F: '{print $1}'`
+    occurrence=`echo -e "$gfxinfo_raw" | grep "$data_start" -n | awk 'END{print NR}'`
+    log_print "profile_data_merge first occurrence: "$first_occur"(Sum: $occurrence)"
+
+    if [ -z "$first_occur" ]
+    then
+        log_err_print "No available profile data"
+        return -1
+    fi
+
+    # Profile data listed in only one region. No need to merge
+    if [ "$occurrence" == "1" ]
+    then
+        gfxinfo="$gfxinfo_raw"
+        log_print "profile_data_merge no need to merge: ""$gfxinfo"
+        return 0
+    fi
+
+    # Find the line that we want to delete. By deleting lines, data is merged.
+    let first_occur++
+
+    gfxinfo=$(echo -e "$gfxinfo_raw" | sed "$first_occur,$ {/^$/{N;d}; /"$data_start"/{N;d}}")
+
+    log_print "profile_data_merge after: ""$gfxinfo"
+}
+
 function calculate_framerate() {
     if [ `echo "$aver_total <= 0.01" | bc` -eq 1 ]; then
         fps=0
@@ -178,11 +208,15 @@ then
     return -1
 fi
 
-gfxinfo=$(dumpsys gfxinfo $target_pkg)
+gfxinfo_raw=$(dumpsys gfxinfo $target_pkg)
 
-# Find and locale the profile data
+# Prepare profile data
+# Profile data may be listed in different "Process.*Execute" regions. Find and merge.
 data_start="Process.*Execute"
 data_end="View hierarchy:"
+# Assign $gfxinfo with merged profile data
+profile_data_merge
+# Find and locale the profile data
 data_start_line=$(echo "$gfxinfo"  | grep "$data_start" -n | awk -F: '{print $1}')
 data_end_line=$(echo "$gfxinfo"  | grep "$data_end" -n | awk -F: '{print $1}')
 
