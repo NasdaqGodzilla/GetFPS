@@ -1,12 +1,22 @@
 #!/bin/bash
 
 # TODO: Add params to control log print
-enable_log=true
+log_enable=true
+log_tag=get_fps
 
 prop_hwui_profile="debug.hwui.profile"
 
 function import() {
     source $1 >> /dev/null
+}
+
+function log_print() {
+    [[ "$log_enable" == "true" ]] || return 0
+    echo -e $log_tag":\t""$@"
+}
+
+function log_err_print() {
+    echo -e $log_tag"[ERR]:\t""$@"
 }
 
 function assert_hwui_profile_enabled() {
@@ -16,7 +26,8 @@ function assert_hwui_profile_enabled() {
 }
 
 function calculate_fps() {
-    [[ "$enable_log" == "true" ]] && echo " ***** RAW PROFILE DATA ***** "
+    log_print " ***** RAW PROFILE DATA ***** "
+    # TODO: assign to an value.
     echo "$gfxinfo" | head -n $data_end_line | tail -n $data_total
     [[ "$enable_log" == "true" ]]
 }
@@ -41,11 +52,11 @@ fi
 # parse_params
 
 resumed_pkg=`utils\:\:GetResumedActivityPkgName`
-[[ "$enable_log" == "true" ]] && echo "Resumed pkg: "$resumed_pkg
+log_print "Resumed pkg: "$resumed_pkg
 
 # TODO: Add params to assign target_pkg
 target_pkg="$resumed_pkg"
-[[ "$enable_log" == "true" ]] && echo "Target pkg: "$target_pkg
+log_print "Target pkg: "$target_pkg
 
 gfxinfo=$(dumpsys gfxinfo $target_pkg)
 
@@ -59,19 +70,18 @@ let data_start_line++
 let data_end_line-=2
 let data_total=data_end_line-data_start_line+1
 
-[[ "$enable_log" == "true" ]] && \
-    echo "Profile data line number: " "["$data_start_line", "$data_end_line"] total: " $data_total
+log_print "Profile data line number: " "["$data_start_line", "$data_end_line"] total: " $data_total
 
 # If you don't call am restart, there would be no data even if $hwui_profile_enabled was set.
 if [ $data_start_line -lt 1 ]
 then
-    echo "Empty profile data. Maybe profile data unavailable or am restart needed."
+    log_err_print "Empty profile data. Maybe profile data unavailable or am restart needed."
     return -1
 fi
 
 if [ $data_total -lt 1 ]
 then
-[[ "$enable_log" == "true" ]] && echo "Empty profile data. Swipe the screen to generate."
+log_err_print "Empty profile data[$target_pkg]. Swipe the screen to generate."
 else
     calculate_fps
 fi
