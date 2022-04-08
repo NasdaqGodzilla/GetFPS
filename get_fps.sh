@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# TODO: Add params to control log print
-log_enable=true
+log_enable=false
 log_tag=get_fps
+
+param_target_pkgname=
 
 prop_hwui_profile="debug.hwui.profile"
 
@@ -17,6 +18,21 @@ function log_print() {
 
 function log_err_print() {
     echo -e $log_tag"[ERR]:\t""$@"
+}
+
+function help() {
+cat << EOF
+Usage: source get_fps.sh [OPTION]
+Get FPS by calculate profile data retrieved from dumpsys gfxinfo.
+
+  -h     display this help and exit
+  -p     package name to dump. default: current top resumed package
+  -d     enable log printing. default: just print FPS.
+
+Example:
+  source get_fps.sh                             Print FPS for current top resumed package.
+  source get_fps.sh -p com.android.launcher3    Print FPS for selected package.
+EOF
 }
 
 function assert_hwui_profile_enabled() {
@@ -48,8 +64,29 @@ EOF
     return 1
 fi
 
-# TODO
-# parse_params
+OPTIND=1
+while getopts hdp: opt
+do
+    case "$opt" in
+        d)
+            log_enable=true
+            log_print "Enable log printing"
+            ;;
+        p)
+            param_target_pkgname="${OPTARG}"
+            log_print "Target: "$param_target_pkgname
+            ;;
+        h)
+            help
+            return
+            ;;
+        *)
+            log_err_print "Unknown option $OPTARG"
+            help
+            return
+            ;;
+    esac
+done
 
 resumed_pkg=`utils\:\:GetResumedActivityPkgName`
 log_print "Resumed pkg: "$resumed_pkg
