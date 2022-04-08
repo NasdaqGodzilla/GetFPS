@@ -91,8 +91,9 @@ done
 resumed_pkg=`utils\:\:GetResumedActivityPkgName`
 log_print "Resumed pkg: "$resumed_pkg
 
-# TODO: Add params to assign target_pkg
-target_pkg="$resumed_pkg"
+[[ ! -z "$param_target_pkgname" ]] && \
+    target_pkg="$param_target_pkgname" || \
+    target_pkg="$resumed_pkg"
 log_print "Target pkg: "$target_pkg
 
 gfxinfo=$(dumpsys gfxinfo $target_pkg)
