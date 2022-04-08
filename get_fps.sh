@@ -33,10 +33,20 @@ Get FPS by calculate profile data retrieved from dumpsys gfxinfo.
   -h     display this help and exit
   -p     package name to dump. default: current top resumed package
   -d     enable log printing. default: just print FPS.
+  -t     print average total elapsed time instead of FPS.
 
 Example:
   source get_fps.sh                             Print FPS for current top resumed package.
   source get_fps.sh -p com.android.launcher3    Print FPS for selected package.
+
+INFO:
+  The calculation from gfxinfo profile data does not work if app draws without hwui.
+  So it only works in when app draws with hardward accelerate.
+  There are no available profile data if app does not call performTraversals. It means no frame refresh and zero FPS.
+
+  Besides, The frame rate that calculate with 1000 divided by the average elapsed time is not always exactly the real FPS.
+  Such as, under the simple drawing and less workload, the calculation result will obviously higher than normal case
+  and especially heavy-load case. The high FPS still finally limit under display.
 EOF
 }
 
@@ -175,9 +185,11 @@ then
     return -1
 fi
 
+fps=0
 if [ $data_total -lt 1 ]
 then
-log_err_print "Empty profile data[$target_pkg]. Swipe the screen to generate."
+log_print "Empty profile data[$target_pkg]. Swipe the screen to generate."
+calculate_done "FPS: "
 else
     calculate_fps
     calculate_done "FPS: "
