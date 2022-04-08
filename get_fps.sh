@@ -4,6 +4,7 @@ log_enable=false
 log_tag=get_fps
 
 print_aver_total=false
+print_aver_value=false
 
 param_target_pkgname=
 profile_raw_data=
@@ -36,6 +37,7 @@ Get FPS by calculate profile data retrieved from dumpsys gfxinfo.
   -p     package name to dump. default: current top resumed package
   -d     enable log printing. default: just print FPS.
   -t     print average total elapsed time instead of FPS.
+  -v     print average elapsed time each stage: Draw Prepare Process Execute
 
 Example:
   source get_fps.sh                             Print FPS for current top resumed package.
@@ -75,7 +77,7 @@ EOF
 fi
 
 OPTIND=1
-while getopts thdp: opt
+while getopts vthdp: opt
 do
     case "$opt" in
         d)
@@ -89,6 +91,10 @@ do
         t)
             print_aver_total=true
             log_print "Enable print_aver_total"
+            ;;
+        v)
+            print_aver_value=true
+            log_print "Enable print_aver_value"
             ;;
         h)
             help
@@ -192,6 +198,9 @@ function calculate_done() {
         echo "Average elapsed $aver_total ms" ||
         # echo "$PREFIX$fps$SUFFIX"
         echo "$1$fps$2"
+
+    [[ "$print_aver_value" == "true" ]] &&
+        echo "$aver_draw $aver_prepare $aver_process $aver_execute"
 }
 
 resumed_pkg=`utils\:\:GetResumedActivityPkgName`
