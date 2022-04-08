@@ -172,13 +172,26 @@ log_print "Resumed pkg: "$resumed_pkg
     target_pkg="$resumed_pkg"
 log_print "Target pkg: "$target_pkg
 
+if [ -z "$target_pkg" ]
+then
+    log_err_print "NULL TARGET"
+    return -1
+fi
+
 gfxinfo=$(dumpsys gfxinfo $target_pkg)
 
 # Find and locale the profile data
-data_start="Execute"
+data_start="Process.*Execute"
 data_end="View hierarchy:"
 data_start_line=$(echo "$gfxinfo"  | grep "$data_start" -n | awk -F: '{print $1}')
 data_end_line=$(echo "$gfxinfo"  | grep "$data_end" -n | awk -F: '{print $1}')
+
+if [ -z "$data_start_line" ] || [ -z "$data_end_line" ]
+then
+    log_err_print "No available profile data"
+    return -1
+fi
+
 data_total=0
 let data_start_line++
 let data_end_line-=2
