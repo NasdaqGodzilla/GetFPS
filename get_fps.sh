@@ -4,6 +4,7 @@ log_enable=false
 log_tag=get_fps
 
 param_target_pkgname=
+profile_raw_data=
 
 prop_hwui_profile="debug.hwui.profile"
 
@@ -14,6 +15,10 @@ function import() {
 function log_print() {
     [[ "$log_enable" == "true" ]] || return 0
     echo -e $log_tag":\t""$@"
+}
+
+function log_println() {
+    log_print "$@\n"
 }
 
 function log_err_print() {
@@ -39,13 +44,6 @@ function assert_hwui_profile_enabled() {
     hwui_profile_enabled=`getprop "$prop_hwui_profile"`
     [[ "$hwui_profile_enabled" == "true" ]] || return 0
     return 1
-}
-
-function calculate_fps() {
-    log_print " ***** RAW PROFILE DATA ***** "
-    # TODO: assign to an value.
-    echo "$gfxinfo" | head -n $data_end_line | tail -n $data_total
-    [[ "$enable_log" == "true" ]]
 }
 
 import utils.sh
@@ -88,6 +86,66 @@ do
     esac
 done
 
+function calculate_framerate() {
+    if [ `echo "$aver_total <= 0.01" | bc` -eq 1 ]; then
+        fps=0
+        return
+    fi
+
+    fps=`echo "1000/$aver_total" | bc`
+}
+
+function calculate_average() {
+    ret=$( \
+        echo -e "$profile_raw_data" | awk -v log_enable="$log_enable" -v log_tag="$log_tag" '
+            {
+                sum_draw+=$1
+                sum_prepare+=$2
+                sum_process+=$3
+                sum_execute+=$4
+            }
+            END {
+                aver_draw=sum_draw/NR
+                aver_prepare=sum_prepare/NR
+                aver_process=sum_process/NR
+                aver_execute=sum_execute/NR
+
+                printf("NR=%d sum_draw=%2.2f aver_draw=%2.2f sum_prepare=%2.2f \
+                    aver_prepare=%2.2f sum_process=%2.2f aver_process=%2.2f \
+                    sum_execute=%2.2f aver_execute=%2.2f",
+                    NR, sum_draw, aver_draw, sum_prepare, aver_prepare,
+                    sum_process, aver_process, sum_execute, aver_execute);
+            }'
+    )
+
+    eval $(echo -e "$ret" | awk 'BEGIN{RS=" "} /aver_draw/')
+    eval $(echo -e "$ret" | awk 'BEGIN{RS=" "} /aver_prepare/')
+    eval $(echo -e "$ret" | awk 'BEGIN{RS=" "} /aver_process/')
+    eval $(echo -e "$ret" | awk 'BEGIN{RS=" "} /aver_execute/')
+    aver_total=`echo "$aver_draw+$aver_prepare+$aver_process+$aver_execute" | bc`
+
+    log_print "calculate_average: " $ret
+    log_print "Aver: $aver_draw $aver_prepare $aver_process $aver_execute"
+    log_print "aver_total: " $aver_total
+}
+
+function calculate_fps_impl() {
+    calculate_average
+    calculate_framerate
+}
+
+function calculate_fps() {
+    profile_raw_data=`echo -e "$gfxinfo" | head -n $data_end_line | tail -n $data_total`
+    log_print "***** RAW PROFILE DATA *****"
+    log_print "$profile_raw_data"
+    calculate_fps_impl
+}
+
+function calculate_done() {
+    # echo "$PREFIX$fps$SUFFIX"
+    echo "$1$fps$2"
+}
+
 resumed_pkg=`utils\:\:GetResumedActivityPkgName`
 log_print "Resumed pkg: "$resumed_pkg
 
@@ -122,5 +180,6 @@ then
 log_err_print "Empty profile data[$target_pkg]. Swipe the screen to generate."
 else
     calculate_fps
+    calculate_done "FPS: "
 fi
 
