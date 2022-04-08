@@ -3,6 +3,8 @@
 log_enable=false
 log_tag=get_fps
 
+print_aver_total=false
+
 param_target_pkgname=
 profile_raw_data=
 
@@ -73,7 +75,7 @@ EOF
 fi
 
 OPTIND=1
-while getopts hdp: opt
+while getopts thdp: opt
 do
     case "$opt" in
         d)
@@ -83,6 +85,10 @@ do
         p)
             param_target_pkgname="${OPTARG}"
             log_print "Target: "$param_target_pkgname
+            ;;
+        t)
+            print_aver_total=true
+            log_print "Enable print_aver_total"
             ;;
         h)
             help
@@ -152,8 +158,10 @@ function calculate_fps() {
 }
 
 function calculate_done() {
-    # echo "$PREFIX$fps$SUFFIX"
-    echo "$1$fps$2"
+    [[ "$print_aver_total" == "true" ]] &&
+        echo "Average elapsed $aver_total ms" ||
+        # echo "$PREFIX$fps$SUFFIX"
+        echo "$1$fps$2"
 }
 
 resumed_pkg=`utils\:\:GetResumedActivityPkgName`
@@ -186,6 +194,11 @@ then
 fi
 
 fps=0
+aver_draw=0
+aver_prepare=0
+aver_process=0
+aver_execute=0
+aver_total=0
 if [ $data_total -lt 1 ]
 then
 log_print "Empty profile data[$target_pkg]. Swipe the screen to generate."
