@@ -145,6 +145,10 @@ function calculate_framerate() {
     fi
 
     fps=`echo "1000/$aver_total" | bc`
+
+    [[ "$fps" -gt "$get_fps_display_refres_rate" ]] && { \
+        fps="$get_fps_display_refres_rate"
+    }
 }
 
 function calculate_average() {
@@ -216,6 +220,11 @@ then
     log_err_print "NULL TARGET"
     return -1
 fi
+
+get_fps_display_refres_rate=`utils_get_display_refreshrate`
+[[ "0" -ge "$get_fps_display_refres_rate" ]] && { \
+    get_fps_display_refres_rate=60
+}
 
 gfxinfo_raw=$(dumpsys gfxinfo $target_pkg)
 
