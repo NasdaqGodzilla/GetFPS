@@ -6,3 +6,7 @@ function utils::GetResumedActivityPkgName() {
     echo "$ret"
 }
 
+function utils_get_display_refreshrate() {
+    dumpsys display | grep DisplayConfig | grep refreshRate | sed -r 's/.*refreshRate=([0-9]*).*/\1/g'
+}
+
