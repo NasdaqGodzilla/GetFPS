@@ -25,6 +25,7 @@ function log_println() {
 }
 
 function log_err_print() {
+    [[ "$log_enable" == "true" ]] || return 0
     echo -e $log_tag"[ERR]:\t""$@"
 }
 
@@ -119,6 +120,7 @@ function profile_data_merge() {
     if [ -z "$first_occur" ]
     then
         log_err_print "No available profile data"
+        calculate_done "FPS: "
         return -1
     fi
 
@@ -198,6 +200,10 @@ function calculate_fps() {
 }
 
 function calculate_done() {
+    [[ "0" -ge "$fps" ]] && { \
+        fps=0
+    }
+
     [[ "$print_aver_total" == "true" ]] &&
         echo "Average elapsed $aver_total ms" ||
         # echo "$PREFIX$fps$SUFFIX"
@@ -218,6 +224,7 @@ log_print "Target pkg: "$target_pkg
 if [ -z "$target_pkg" ]
 then
     log_err_print "NULL TARGET"
+    calculate_done "FPS: "
     return -1
 fi
 
@@ -241,6 +248,7 @@ data_end_line=$(echo "$gfxinfo"  | grep "$data_end" -n | awk -F: '{print $1}')
 if [ -z "$data_start_line" ] || [ -z "$data_end_line" ]
 then
     log_err_print "No available profile data"
+    calculate_done "FPS: "
     return -1
 fi
 
