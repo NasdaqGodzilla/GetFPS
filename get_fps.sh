@@ -213,6 +213,15 @@ function calculate_done() {
         echo "$aver_draw $aver_prepare $aver_process $aver_execute"
 }
 
+function get_fps_reset() {
+    fps=0
+    aver_draw=0
+    aver_prepare=0
+    aver_process=0
+    aver_execute=0
+    aver_total=0
+}
+
 resumed_pkg=`utils\:\:GetResumedActivityPkgName`
 log_print "Resumed pkg: "$resumed_pkg
 
@@ -245,6 +254,8 @@ profile_data_merge
 data_start_line=$(echo "$gfxinfo"  | grep "$data_start" -n | awk -F: '{print $1}')
 data_end_line=$(echo "$gfxinfo"  | grep "$data_end" -n | awk -F: '{print $1}')
 
+get_fps_reset
+
 if [ -z "$data_start_line" ] || [ -z "$data_end_line" ]
 then
     log_err_print "No available profile data"
@@ -266,12 +277,6 @@ then
     return -1
 fi
 
-fps=0
-aver_draw=0
-aver_prepare=0
-aver_process=0
-aver_execute=0
-aver_total=0
 if [ $data_total -lt 1 ]
 then
 log_print "Empty profile data[$target_pkg]. Swipe the screen to generate."
