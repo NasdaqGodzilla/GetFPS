@@ -121,7 +121,7 @@ function profile_data_merge() {
     then
         log_err_print "No available profile data"
         calculate_done "FPS: "
-        return -1
+        exit -1
     fi
 
     # Profile data listed in only one region. No need to merge
